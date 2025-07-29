@@ -7,7 +7,7 @@ st.set_page_config(page_title="KRG Tree Index", layout="wide")
 # === Load Excel data ===
 @st.cache_data
 def load_data():
-    EXCEL_FILE = r"C:\Users\sourc\smart_tree_system\data\tree_data_with_images.xlsx"
+    EXCEL_FILE = "data/tree_data_with_images.xlsx"  # ← Corrected path
     df = pd.read_excel(EXCEL_FILE)
     return df
 
@@ -52,4 +52,3 @@ elif page == "Tree Catalog":
         st.markdown(f"**Suitability for Erbil:** {row['Suitability']}")
         st.markdown(f"**Water Need:** {row['Water Need']}")
         st.markdown("---")
-
