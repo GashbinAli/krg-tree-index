@@ -1,93 +1,54 @@
 import streamlit as st
 import pandas as pd
-import os
-from pathlib import Path
 
-# ───────────────────────────────────────────────
-#  PAGE CONFIG
-# ───────────────────────────────────────────────
-st.set_page_config(page_title="KRG Tree Index", page_icon="🌳", layout="centered")
-st.title("🌳 Smart Tree System")
-st.subheader("KRG Tree Index – Search Tree Suitability")
-st.markdown("Type a tree name below to check if it's suitable for planting in Erbil.")
+# === Page configuration ===
+st.set_page_config(page_title="KRG Tree Index", layout="wide")
 
-# ───────────────────────────────────────────────
-#  CONSTANTS
-# ───────────────────────────────────────────────
-EXCEL_FILE     = "tree_data_with_images.xlsx"  # your data file
-IMAGE_FOLDER   = Path("Images")                # local images folder
-IMAGE_EXTS     = [".jpg", ".jpeg", ".png", ".webp"]  # allowed extensions
-
-# ───────────────────────────────────────────────
-#  LOAD DATA
-# ───────────────────────────────────────────────
+# === Load Excel data ===
 @st.cache_data
 def load_data():
+    EXCEL_FILE = "data/tree_data_with_images.xlsx"
     df = pd.read_excel(EXCEL_FILE)
-    df = df.rename(columns={
-        "Suitability (Erbil climate)": "Suitability",
-        "Score (1–5)": "Score"
-    })
     return df
 
 df = load_data()
 
-# ───────────────────────────────────────────────
-#  HELPER TO FIND IMAGE
-# ───────────────────────────────────────────────
-def find_image_path(row) -> Path | None:
-    """
-    1) If the row has 'Image File' column with a value, use that.
-    2) Else, build filename from the tree name and look for any allowed extension.
-    Returns a Path object or None.
-    """
-    # 1️⃣ explicit filename
-    if "Image File" in row and pd.notna(row["Image File"]):
-        explicit = IMAGE_FOLDER / str(row["Image File"])
-        if explicit.exists():
-            return explicit
+# === Sidebar Navigation ===
+st.sidebar.title("🌳 KRG Tree Index")
+page = st.sidebar.radio("Go to", ["Tree Search", "Tree Catalog"])
 
-    # 2️⃣ auto‑build filename  (e.g.  Brant’s Oak  →  Brants_Oak.jpg)
-    base = (
-        str(row["Tree Name"])
-        .replace("’", "")
-        .replace("'", "")
-        .replace(" ", "_")
-    )
-    for ext in IMAGE_EXTS:
-        candidate = IMAGE_FOLDER / f"{base}{ext}"
-        if candidate.exists():
-            return candidate
-    return None
+# === Page 1: Tree Search ===
+if page == "Tree Search":
+    st.title("🔍 Tree Search")
+    st.write("Type a tree name in the search box below to see its details.")
 
-# ───────────────────────────────────────────────
-#  UI – SEARCH
-# ───────────────────────────────────────────────
-query = st.text_input("Enter a tree name (e.g., Oak, Olive, Pine):")
+    # Search box
+    search_query = st.text_input("Search Tree by Name:")
 
-if query:
-    results = df[df["Tree Name"].str.contains(query, case=False, na=False)]
-    if results.empty:
-        st.warning("Tree not found. Try another name.")
-    else:
-        for _, row in results.iterrows():
-            st.markdown("---")
+    if search_query:
+        # Filter dataframe by matching tree name
+        results = df[df["Tree Name"].str.contains(search_query, case=False, na=False)]
 
-            # ▸ SHOW IMAGE (local)
-            img_path = find_image_path(row)
-            if img_path:
-                st.image(str(img_path), caption=row["Tree Name"], use_column_width=True)
-            else:
-                st.info("📷 No local image found for this tree.")
+        if not results.empty:
+            for index, row in results.iterrows():
+                st.subheader(row["Tree Name"])
+                st.markdown(f"**Scientific Name:** {row['Scientific Name']}")
+                st.markdown(f"**Suitability for Erbil:** {row['Suitability']}")
+                st.markdown(f"**Water Need:** {row['Water Need']}")
+                st.markdown(f"**Shade Value:** {row.get('Shade Value', 'N/A')}")
+                st.markdown("---")
+        else:
+            st.warning("No tree found with that name.")
 
-            # ▸ SHOW DATA
-            st.markdown(f"**🌳 Tree Name:** {row['Tree Name']}")
-            st.markdown(f"**🔬 Scientific Name:** {row['Scientific Name']}")
-            st.markdown(f"**📍 Local Name:** {row['Local Name (Kurdish)']}")
-            st.markdown(f"**🌦️ Suitability:** {row['Suitability']}")
-            st.markdown(f"**💧 Water Needs:** {row['Water Needs']}")
-            st.markdown(f"**🌳 Shade Value:** {row['Shade Value']}")
-            st.markdown(f"**🌱 Soil Compatibility:** {row['Soil Compatibility']}")
-            st.markdown(f"**🧬 Native?** {row['Native?']}")
-            st.markdown(f"**📊 Score:** {row['Score']}/5")
-            st.markdown(f"**📚 Notes:** {row['Notes / Scientific Reasoning']}")
+# === Page 2: Tree Catalog ===
+elif page == "Tree Catalog":
+    st.title("🌲 Tree Catalog")
+    st.write("Here is the full visual catalog of trees.")
+
+    # Show all tree names (add images later)
+    for index, row in df.iterrows():
+        st.subheader(row["Tree Name"])
+        st.markdown(f"**Scientific Name:** {row['Scientific Name']}")
+        st.markdown(f"**Suitability for Erbil:** {row['Suitability']}")
+        st.markdown(f"**Water Need:** {row['Water Need']}")
+        st.markdown("---")
