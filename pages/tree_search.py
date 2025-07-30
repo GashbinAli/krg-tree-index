@@ -24,7 +24,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     if st.button("🔍 Tree Search", use_container_width=True):
-        st.switch_page("pages/tree_search")    # ✅ exact path to pages/tree_search.py
+        st.switch_page("pages/tree_search.py")    # ✅ exact path to pages/tree_search.py
 
 with col2:
     if st.button("🌲 Tree Catalog", use_container_width=True):
