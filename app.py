@@ -1,36 +1,34 @@
 import streamlit as st
 from pathlib import Path
 
-# ──────────────────────────────────────────────────────────────
-# 1)  HEADER helper (copy this into every page file)
-# ──────────────────────────────────────────────────────────────
-_ASSETS = Path(__file__).parent / "assets"   # assets/hasar_logo.png, gov_logo.png
+# ==== paste header helper here =================================
+from pathlib import Path
+import streamlit as st as _st   # alias avoids clash below
+
+_ASSETS = Path(__file__).parent / "assets"
 
 def show_header():
-    col_left, col_center, col_right = st.columns([0.15, 0.7, 0.15])
+    col_left, col_center, col_right = _st.columns([0.15, 0.7, 0.15])
     with col_left:
-        st.image(_ASSETS / "hasar_logo.png", use_column_width="auto")
+        _st.image(str(_ASSETS / "hasar_logo.png"), use_container_width=True)
     with col_right:
-        st.image(_ASSETS / "gov_logo.png",  use_column_width="auto")
+        _st.image(str(_ASSETS / "gov_logo.png"), use_container_width=True)
+# ===============================================================
 
-# ──────────────────────────────────────────────────────────────
-# 2)  Page config + HEADER
-# ──────────────────────────────────────────────────────────────
 st.set_page_config(page_title="KRG Tree Index", layout="wide")
-show_header()          # ← logos appear
+show_header()                       # ← logos appear
 
 st.title("🌳 KRG Tree Index")
 
 st.markdown(
     """
-Welcome to the **KRG Tree Index** — a data-driven guide for selecting the
-best species for Kurdistan’s climate.
+Welcome to the **KRG Tree Index** — a data-driven guide for selecting the best
+tree species for Kurdistan’s climate.
 
-Use the buttons below *or* the left sidebar to explore.
+Use the buttons below *or* the sidebar to explore.
 """
 )
 
-# navigation buttons
 col1, col2 = st.columns(2)
 with col1:
     if st.button("🔍 Tree Search", use_container_width=True):
