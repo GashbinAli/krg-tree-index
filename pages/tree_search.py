@@ -1,71 +1,37 @@
-import os
 import streamlit as st
-from db_handler import execute_query   # ← your helper lives in the project root
 
 # --------------------------------------------------
-# Pull DB URL from secrets in production (optional)
+# Page config
 # --------------------------------------------------
-if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
-    os.environ["DATABASE_URL"] = st.secrets["connections"]["postgres"]["url"]
+st.set_page_config(page_title="KRG Tree Index", layout="wide")
 
-# --------------------------------------------------
-# Page config & header
-# --------------------------------------------------
-st.set_page_config(page_title="KRG Tree Index – Tree Search", layout="wide")
-
-st.title("🔍 Tree Search")
+st.title("🌳 KRG Tree Index")
 
 st.markdown(
     """
-Search the live **KRG Tree Index** database hosted on Neon.
-Type a *common* or *scientific* name & press **Enter**.
+Welcome to the **KRG Tree Index** — a data-driven guide to selecting the
+best species for Kurdistan’s climate.
+
+Use the buttons below *or* the left-hand sidebar to explore the app.
 """
 )
 
 # --------------------------------------------------
-# Search box
+# Navigation buttons
+# (NOTE: use the exact file basename, no spaces, no ".py")
 # --------------------------------------------------
-search_term = st.text_input("Tree name (partial is OK):").strip()
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("🔍 Tree Search", use_container_width=True):
+        st.switch_page("pages/tree_search")    # ✅ exact path to pages/tree_search.py
+
+with col2:
+    if st.button("🌲 Tree Catalog", use_container_width=True):
+        st.switch_page("pages/tree_catalog")   # ✅ exact path to pages/tree_catalog.py
 
 # --------------------------------------------------
-# Helper to format one row
+# Footer
 # --------------------------------------------------
-def show_tree(row: dict) -> None:
-    st.subheader(row["tree_name"].title())
-    st.markdown(f"**Scientific Name:** *{row['scientific_name']}*")
-    st.markdown(f"**Suitability:** {row.get('suitability', 'N/A')}")
-    st.markdown(
-        f"**Water Efficiency (1-5):** {row.get('water_efficiency', 'N/A')}"
-    )
-    st.markdown(
-        f"**Shade / Public Use (1-5):** {row.get('shade_public_use', 'N/A')}"
-    )
-    st.markdown(f"**Rating:** {row.get('rating', 'N/A')}")
-    st.markdown("---")
-
-# --------------------------------------------------
-# DB query & display
-# --------------------------------------------------
-if search_term:
-    sql = """
-        SELECT *
-        FROM tree_data
-        WHERE tree_name ILIKE %s
-           OR scientific_name ILIKE %s
-        ORDER BY tree_name;
-    """
-    rows = execute_query(sql, (f"%{search_term}%", f"%{search_term}%"), fetch=True)
-
-    if rows:
-        for r in rows:
-            show_tree(r)
-    else:
-        st.warning("No match found.")
-else:
-    st.info("Start typing to search. Here’s a quick preview ↓")
-    preview = execute_query(
-        "SELECT tree_name, scientific_name FROM tree_data ORDER BY tree_name LIMIT 25;",
-        fetch=True,
-    )
-    for r in preview:
-        st.write(f"• **{r['tree_name']}** — *{r['scientific_name']}*")
+st.markdown("---")
+st.caption("© 2025 Hasar Organization | KRG Tree Index")
