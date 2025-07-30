@@ -1,36 +1,34 @@
 import streamlit as st
 
 # --------------------------------------------------
-# Page configuration
+# Basic page config
 # --------------------------------------------------
 st.set_page_config(page_title="KRG Tree Index", layout="wide")
 
-# --------------------------------------------------
-# Welcome message
-# --------------------------------------------------
 st.title("🌳 KRG Tree Index")
 
 st.markdown(
     """
-Welcome to the **KRG Tree Index** — a data‑driven guide to selecting the
-right trees for Kurdistan’s climate.
+Welcome to the **KRG Tree Index** — a data-driven guide for selecting the right
+trees for Kurdistan’s climate.
 
-Use the buttons below (or Streamlit’s sidebar) to explore the application.
-    """,
+Use the buttons below *or* the sidebar to explore the app.
+"""
 )
 
 # --------------------------------------------------
-# Simple button‑based navigation
+# Button-based navigation
+# (NOTE: st.switch_page needs the relative path WITHOUT .py)
 # --------------------------------------------------
 col1, col2 = st.columns(2)
 
 with col1:
     if st.button("🔍 Tree Search", use_container_width=True):
-        st.switch_page("pages/Tree Search")
+        st.switch_page("pages/tree_search")      # ← exact file path (no .py)
 
 with col2:
     if st.button("🌲 Tree Catalog", use_container_width=True):
-        st.switch_page("pages/Tree Catalog")
+        st.switch_page("pages/tree_catalog")     # ← exact file path (no .py)
 
 # --------------------------------------------------
 # Footer
