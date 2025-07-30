@@ -1,85 +1,36 @@
-import os
-import sys
 import streamlit as st
 
-# ---------------------------------------------------------------------
-# Robust import for the DB helper
-# ---------------------------------------------------------------------
-try:
-    from db_handler import execute_query
-except ModuleNotFoundError:  # fallback if helper is named db-handler.py
-    import importlib.util
-    from pathlib import Path
+# --------------------------------------------------
+# Main landing page
+# --------------------------------------------------
+st.set_page_config(page_title="KRG Tree Index", layout="wide")
 
-    helper_path = Path(__file__).resolve().parent.parent / "db-handler.py"
-    if helper_path.exists():
-        spec = importlib.util.spec_from_file_location("db_handler", helper_path)
-        db_handler = importlib.util.module_from_spec(spec)  # type: ignore
-        sys.modules["db_handler"] = db_handler
-        spec.loader.exec_module(db_handler)  # type: ignore[arg-type]
-        execute_query = db_handler.execute_query  # type: ignore[attr-defined]
-    else:
-        raise
-
-# ---------------------------------------------------------------------
-# Secrets override (for cloud deployments)
-# ---------------------------------------------------------------------
-if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
-    os.environ["DATABASE_URL"] = st.secrets["connections"]["postgres"]["url"]
-
-# ---------------------------------------------------------------------
-# Page config
-# ---------------------------------------------------------------------
-st.set_page_config(page_title="KRG Tree Index – Tree Search", layout="wide")
-
-st.title("🔍 Tree Search")
+st.title("🌳 KRG Tree Index")
 
 st.markdown(
     """
-Search the live **KRG Tree Index** database hosted on Neon.
-Type a common or scientific name (partial words are okay) and press **Enter**.
-    """,
+Welcome to the **KRG Tree Index** — a data-driven guide to selecting the
+right species for Kurdistan’s climate.
+
+Use the buttons below *or* the Streamlit sidebar to navigate.
+"""
 )
 
 # --------------------------------------------------
-# Search box
+# Button-based navigation (uses file basenames only)
 # --------------------------------------------------
-search_query = st.text_input("Tree name (common or scientific):").strip()
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("🔍 Tree Search", use_container_width=True):
+        st.switch_page("tree_search")      # <- file: pages/tree_search.py
+
+with col2:
+    if st.button("🌲 Tree Catalog", use_container_width=True):
+        st.switch_page("tree_catalog")     # <- file: pages/tree_catalog.py
 
 # --------------------------------------------------
-# Helper to render one record
+# Footer
 # --------------------------------------------------
-
-def render_tree(row: dict) -> None:
-    st.subheader(row["tree_name"].title())
-    st.markdown(f"**Scientific Name:** *{row['scientific_name']}*")
-    st.markdown(f"**Suitability:** {row.get('suitability', 'N/A')}")
-    st.markdown(f"**Water Efficiency (1-5):** {row.get('water_efficiency', 'N/A')}")
-    st.markdown(f"**Shade / Public Use (1-5):** {row.get('shade_public_use', 'N/A')}")
-    st.markdown(f"**Rating:** {row.get('rating', 'N/A')}")
-    st.markdown("---")
-
-# --------------------------------------------------
-# Query + display logic
-# --------------------------------------------------
-if search_query:
-    sql = (
-        "SELECT * FROM tree_data "
-        "WHERE tree_name ILIKE %s OR scientific_name ILIKE %s "
-        "ORDER BY tree_name"
-    )
-    rows = execute_query(sql, (f"%{search_query}%", f"%{search_query}%"), fetch=True)
-
-    if rows:
-        for row in rows:
-            render_tree(row)
-    else:
-        st.warning("Nothing matched your search.")
-else:
-    st.info("Start typing to search, or browse a quick preview below.")
-    preview = execute_query(
-        "SELECT tree_name, scientific_name FROM tree_data ORDER BY tree_name LIMIT 25;",
-        fetch=True,
-    )
-    for row in preview:
-        st.write(f"• **{row['tree_name']}** – *{row['scientific_name']}*")
+st.markdown("---")
+st.caption("© 2025 Hasar Organization | KRG Tree Index")
