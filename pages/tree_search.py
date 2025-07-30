@@ -1,13 +1,14 @@
 """
 Tree Search page
 ----------------
-• Searches the Neon `tree_data` table (common OR scientific name).
-• Shows unique tree names in a left column.
-• Click a row → full profile (all score columns) in the right column.
+• Searches Neon `tree_data`.
+• Lists unique tree names.
+• Click a row → full profile formatted as requested.
 """
 
 import os
 import streamlit as st
+import pandas as pd  # needed for the score table
 
 # ---------------------------------------------------------------------
 # Robust import for db_helper
@@ -15,22 +16,21 @@ import streamlit as st
 try:
     from db_handler import execute_query
 except ModuleNotFoundError:
-    # fallback if file is db-handler.py
     import importlib.util, sys
     from pathlib import Path
 
     helper_path = Path(__file__).resolve().parent.parent / "db-handler.py"
     if helper_path.exists():
         spec = importlib.util.spec_from_file_location("db_handler", helper_path)
-        db_handler = importlib.util.module_from_spec(spec)  # type: ignore
+        db_handler = importlib.util.module_from_spec(spec)            # type: ignore
         sys.modules["db_handler"] = db_handler
-        spec.loader.exec_module(db_handler)                 # type: ignore[arg-type]
-        execute_query = db_handler.execute_query            # type: ignore[attr-defined]
+        spec.loader.exec_module(db_handler)                           # type: ignore[arg-type]
+        execute_query = db_handler.execute_query                      # type: ignore[attr-defined]
     else:
         raise
 
 # ---------------------------------------------------------------------
-# Optional secrets override (for cloud deploy)
+# Optional secrets override
 # ---------------------------------------------------------------------
 if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
     os.environ["DATABASE_URL"] = st.secrets["connections"]["postgres"]["url"]
@@ -43,8 +43,8 @@ st.title("🔍 Tree Search")
 
 st.markdown(
     """
-Type all or part of a *common* or *scientific* name.  
-Click one result to see its full profile (every score field).
+Type part of a *common* or *scientific* name.  
+Click a result to view its full profile.
 """
 )
 
@@ -60,7 +60,7 @@ if "selected_tree_id" not in st.session_state:
 search_term = st.text_input("Search:").strip()
 
 # ---------------------------------------------------------------------
-# Column layout
+# Choose layout widths
 # ---------------------------------------------------------------------
 if st.session_state.selected_tree_id:
     col_list, col_detail = st.columns([1, 2])
@@ -68,7 +68,7 @@ else:
     col_list, col_detail = st.columns([1, 0.05])
 
 # ---------------------------------------------------------------------
-# DETAIL PANEL (right)
+# Detail panel
 # ---------------------------------------------------------------------
 with col_detail:
     if st.session_state.selected_tree_id:
@@ -78,10 +78,12 @@ with col_detail:
             fetch=True,
         )[0]
 
+        # 1️⃣ Rating at the very top
         st.header(tree["tree_name"])
-        st.markdown(f"**Scientific name:** *{tree['scientific_name']}*")
-        st.markdown("---")
+        rating_display = tree.get("rating", "N/A")
+        st.markdown(f"### Rating: {rating_display}")
 
+        # 2️⃣ Numeric scores in a table
         score_labels = {
             "climate_adaptation":       "Climate adaptation",
             "water_efficiency":         "Water efficiency",
@@ -95,15 +97,20 @@ with col_detail:
             "total_score":              "TOTAL score",
         }
 
-        for col, label in score_labels.items():
-            if col in tree and tree[col] is not None:
-                st.markdown(f"**{label}:** {tree[col]}")
+        score_rows = [
+            {"Criterion": label, "Score": tree[col]}
+            for col, label in score_labels.items()
+            if col in tree and tree[col] is not None
+        ]
+        if score_rows:
+            df = pd.DataFrame(score_rows).set_index("Criterion")
+            st.table(df)
 
+        # 3️⃣ Descriptive paragraphs
         st.markdown("---")
-        st.markdown(f"**Suitability:** {tree.get('suitability', 'N/A')}")
-        st.markdown(f"**Rating:** {tree.get('rating', 'N/A')}")
-        st.markdown(f"**Information:** {tree.get('information', '')}")
-        st.markdown(f"**Challenges:** {tree.get('challenges', '')}")
+        st.markdown(f"**Information**  \n{tree.get('information', 'N/A')}")
+        st.markdown(f"**Suitability**  \n{tree.get('suitability', 'N/A')}")
+        st.markdown(f"**Challenges**  \n{tree.get('challenges', 'N/A')}")
         st.markdown("---")
 
         if st.button("🔙 Back to results"):
@@ -111,7 +118,7 @@ with col_detail:
             st.rerun()
 
 # ---------------------------------------------------------------------
-# LIST PANEL (left)
+# List panel
 # ---------------------------------------------------------------------
 with col_list:
     if search_term:
@@ -127,7 +134,7 @@ with col_list:
             fetch=True,
         )
         if rows:
-            st.subheader(f"{len(rows)} unique result(s)")
+            st.subheader(f"{len(rows)} result(s)")
             for r in rows:
                 if st.button(
                     f"{r['tree_name']} — {r['scientific_name']}",
@@ -139,7 +146,7 @@ with col_list:
         else:
             st.info("No match found.")
     else:
-        st.info("Start typing to search, or click a sample below.")
+        st.info("Start typing to search, or click one below.")
         preview = execute_query(
             """
             SELECT DISTINCT ON (tree_name)
