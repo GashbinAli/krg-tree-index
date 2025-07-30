@@ -23,11 +23,11 @@ Use the buttons below *or* the sidebar to explore the app.
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("🔍 Tree Search", use_container_width=True):
+    if st.button("🔍 Tree Search.py", use_container_width=True):
         st.switch_page("pages/tree_search")      # ← exact file path (no .py)
 
 with col2:
-    if st.button("🌲 Tree Catalog", use_container_width=True):
+    if st.button("🌲 Tree Catalog.py", use_container_width=True):
         st.switch_page("pages/tree_catalog")     # ← exact file path (no .py)
 
 # --------------------------------------------------
