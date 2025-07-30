@@ -1,2 +1,4 @@
 import streamlit as st
-st.switch_page("Tree Search")
+
+# Immediately switch to the first page (case‑sensitive path)
+st.switch_page("Pages/tree Search")
