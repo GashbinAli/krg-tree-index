@@ -1,74 +1,73 @@
 """
-pages/tree_search.py
---------------------
-• Shows Hasar (left) + Government (right) logos on top of page.
-• Searches Neon `tree_data` by common/scientific name.
-• Lists unique tree names on left; click -> full profile on right.
-• Full profile order: Rating, all numeric scores table, Information,
-  Suitability, Challenges.
+Tree Search page
+----------------
+• Searches Neon `tree_data` by common or scientific name.
+• Shows unique tree names on the left.
+• Click a tree → detail panel on the right with rating, score table, and info.
 """
 
 import os
-import sys
-import importlib.util
-from pathlib import Path
-
-import pandas as pd
 import streamlit as st
+import pandas as pd                 # for score table
+import header                       # logos
 
-# ───────────────────────────────────────────────────────────────
-# 1) Logo header helper (self-contained, no extra file needed)
-# ───────────────────────────────────────────────────────────────
-_ASSETS = Path(__file__).resolve().parent.parent / "assets"  # .. / assets
-
-def show_header() -> None:
-    """Display Hasar logo (left) and KRG government logo (right)."""
-    col_left, col_center, col_right = st.columns([0.15, 0.7, 0.15])
-    with col_left:
-        st.image(str(_ASSETS / "hasar_logo.png"), use_container_width=True)
-    with col_right:
-        st.image(str(_ASSETS / "gov_logo.png"), use_container_width=True)
-# ───────────────────────────────────────────────────────────────
-
-# ── 2) Page config + header ────────────────────────────────────
+# ------------------------ Page config + logos ------------------------
 st.set_page_config(page_title="KRG Tree Index – Tree Search", layout="wide")
-show_header()
+header.show()   # << displays Hasar (left) and Government (right) logos
 
-st.title("🔍 Tree Search")
-st.markdown(
-    "Type a *common* or *scientific* name. Click a result to view its profile."
-)
-
-# ── 3) Robust import for db_handler --------------------------------
+# ------------------------ Robust import for db_handler --------------
 try:
     from db_handler import execute_query
 except ModuleNotFoundError:
+    # fallback if file is still named db-handler.py
+    import importlib.util, sys
+    from pathlib import Path
+
     helper_path = Path(__file__).resolve().parent.parent / "db-handler.py"
-    if not helper_path.exists():
-        st.error("db_handler.py (or db-handler.py) not found!")
-        st.stop()
+    if helper_path.exists():
+        spec = importlib.util.spec_from_file_location("db_handler", helper_path)
+        db_handler = importlib.util.module_from_spec(spec)  # type: ignore
+        sys.modules["db_handler"] = db_handler
+        spec.loader.exec_module(db_handler)                 # type: ignore[arg-type]
+        execute_query = db_handler.execute_query            # type: ignore[attr-defined]
+    else:
+        raise
 
-    spec = importlib.util.spec_from_file_location("db_handler", helper_path)
-    db_handler = importlib.util.module_from_spec(spec)  # type: ignore
-    sys.modules["db_handler"] = db_handler
-    spec.loader.exec_module(db_handler)                 # type: ignore[arg-type]
-    execute_query = db_handler.execute_query            # type: ignore[attr-defined]
-
-# ── 4) Optional DB URL override from Streamlit secrets -----------
+# ------------------------ Optional secrets override -----------------
 if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
     os.environ["DATABASE_URL"] = st.secrets["connections"]["postgres"]["url"]
 
-# ── 5) UI state & search box --------------------------------------
+# ---------------------------------------------------------------------
+# UI intro
+# ---------------------------------------------------------------------
+st.title("🔍 Tree Search")
+st.markdown(
+    """
+Type part of a *common* or *scientific* name.  
+Click a result to view its full profile.
+"""
+)
+
+# ---------------------------------------------------------------------
+# Session state to save selected tree
+# ---------------------------------------------------------------------
 if "selected_tree_id" not in st.session_state:
     st.session_state.selected_tree_id = None
 
+# ---------------------------------------------------------------------
+# Search input
+# ---------------------------------------------------------------------
 search_term = st.text_input("Search:").strip()
 
-# Choose column widths
-cols = [1, 2] if st.session_state.selected_tree_id else [1, 0.05]
-col_list, col_detail = st.columns(cols)
+# Decide column widths depending on whether detail panel is open
+if st.session_state.selected_tree_id:
+    col_list, col_detail = st.columns([1, 2])
+else:
+    col_list, col_detail = st.columns([1, 0.05])
 
-# ── 6) DETAIL PANEL (right) ---------------------------------------
+# =====================================================================
+# DETAIL PANEL (right)
+# =====================================================================
 with col_detail:
     if st.session_state.selected_tree_id:
         tree = execute_query(
@@ -77,11 +76,11 @@ with col_detail:
             fetch=True,
         )[0]
 
-        # Rating
+        # 1️⃣ Rating at the top
         st.header(tree["tree_name"])
         st.markdown(f"### Rating: {tree.get('rating', 'N/A')}")
 
-        # Numeric score table
+        # 2️⃣ Score table
         score_labels = {
             "climate_adaptation":       "Climate adaptation",
             "water_efficiency":         "Water efficiency",
@@ -105,27 +104,28 @@ with col_detail:
                 df.style
                 .set_properties(**{"color": "black", "font-weight": "bold"})
                 .set_table_styles(
-                    [{"selector": "th",
-                      "props": [("color", "black"), ("font-weight", "bold")]}]
+                    [{"selector": "th", "props": [("color", "black"), ("font-weight", "bold")]}]
                 )
             )
             st.table(styled)
 
-        # Descriptive paragraphs
+        # 3️⃣ Text sections
         st.markdown("---")
-        st.markdown(f"**Information**\n\n{tree.get('information', 'N/A')}")
-        st.markdown(f"**Suitability**\n\n{tree.get('suitability', 'N/A')}")
-        st.markdown(f"**Challenges**\n\n{tree.get('challenges', 'N/A')}")
+        st.markdown(f"**Information**  \n{tree.get('information', 'N/A')}")
+        st.markdown(f"**Suitability**  \n{tree.get('suitability', 'N/A')}")
+        st.markdown(f"**Challenges**  \n{tree.get('challenges', 'N/A')}")
         st.markdown("---")
 
         if st.button("🔙 Back to results"):
             st.session_state.selected_tree_id = None
             st.rerun()
 
-# ── 7) LIST PANEL (left) ------------------------------------------
+# =====================================================================
+# LIST PANEL (left)
+# =====================================================================
 with col_list:
     if search_term:
-        results = execute_query(
+        rows = execute_query(
             """
             SELECT DISTINCT ON (tree_name)
                    id, tree_name, scientific_name
@@ -136,9 +136,9 @@ with col_list:
             (f"%{search_term}%", f"%{search_term}%"),
             fetch=True,
         )
-        if results:
-            st.subheader(f"{len(results)} result(s)")
-            for r in results:
+        if rows:
+            st.subheader(f"{len(rows)} result(s)")
+            for r in rows:
                 if st.button(
                     f"{r['tree_name']} — {r['scientific_name']}",
                     key=f"tree_{r['id']}",
@@ -149,7 +149,7 @@ with col_list:
         else:
             st.info("No match found.")
     else:
-        st.info("Start typing to search, or click a random sample below.")
+        st.info("Start typing to search, or click a random sample ↓")
         preview = execute_query(
             """
             SELECT DISTINCT ON (tree_name)
