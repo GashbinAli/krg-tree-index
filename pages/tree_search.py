@@ -1,25 +1,45 @@
-# pages/Tree Search.py
 import os
+import sys
 import streamlit as st
-from db_handler import execute_query   # uses the helper you pasted
 
-# --------------------------------------------------
-# (Optional) pull DB URL from Streamlit secrets
-# --------------------------------------------------
+# ---------------------------------------------------------------------
+# Robust import for the DB helper
+# ---------------------------------------------------------------------
+try:
+    # Preferred: import when the helper is named db_handler.py (snake‑case)
+    from db_handler import execute_query
+except ModuleNotFoundError:  # fallback if the file is still named db-handler.py
+    import importlib.util
+    from pathlib import Path
+
+    helper_path = Path(__file__).resolve().parent.parent / "db-handler.py"
+    if helper_path.exists():
+        spec = importlib.util.spec_from_file_location("db_handler", helper_path)
+        db_handler = importlib.util.module_from_spec(spec)  # type: ignore
+        sys.modules["db_handler"] = db_handler  # register so future imports work
+        spec.loader.exec_module(db_handler)  # type: ignore[arg-type]
+        execute_query = db_handler.execute_query  # type: ignore[attr-defined]
+    else:
+        raise  # re‑raise original error if helper not found at all
+
+# ---------------------------------------------------------------------
+# Optional: pull DATABASE_URL from Streamlit secrets for prod deploys
+# ---------------------------------------------------------------------
 if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
     os.environ["DATABASE_URL"] = st.secrets["connections"]["postgres"]["url"]
 
-# --------------------------------------------------
+# ---------------------------------------------------------------------
 # Page config
-# --------------------------------------------------
+# ---------------------------------------------------------------------
 st.set_page_config(page_title="KRG Tree Index – Tree Search", layout="wide")
+
 st.title("🔍 Tree Search")
 
 st.markdown(
     """
-Search the live **KRG Tree Index** database hosted on Neon.  
+Search the live **KRG Tree Index** database hosted on Neon.
 Type a common or scientific name (even a partial word) and press **Enter**.
-"""
+    """,
 )
 
 # --------------------------------------------------
@@ -30,6 +50,7 @@ search_query = st.text_input("Tree name (common or scientific):").strip()
 # --------------------------------------------------
 # Helper to render one row
 # --------------------------------------------------
+
 def render_tree(row: dict) -> None:
     st.subheader(row["tree_name"].title())
     st.markdown(f"**Scientific Name:** *{row['scientific_name']}*")
@@ -37,7 +58,6 @@ def render_tree(row: dict) -> None:
     st.markdown(f"**Water Efficiency (1-5):** {row.get('water_efficiency', 'N/A')}")
     st.markdown(f"**Shade / Public Use (1-5):** {row.get('shade_public_use', 'N/A')}")
     st.markdown(f"**Rating:** {row.get('rating', 'N/A')}")
-    st.markdown(f"**Info:** {row.get('information', '')}")
     st.markdown("---")
 
 # --------------------------------------------------
