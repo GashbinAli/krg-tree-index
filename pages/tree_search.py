@@ -3,12 +3,12 @@ Tree Search page
 ----------------
 • Searches Neon `tree_data`.
 • Lists unique tree names.
-• Click a row → full profile formatted as requested.
+• Click a row → full profile (rating, score table, info paragraphs).
 """
 
 import os
 import streamlit as st
-import pandas as pd  # needed for the score table
+import pandas as pd  # for the score table
 
 # ---------------------------------------------------------------------
 # Robust import for db_helper
@@ -49,7 +49,7 @@ Click a result to view its full profile.
 )
 
 # ---------------------------------------------------------------------
-# Session state
+# Session state (selected tree)
 # ---------------------------------------------------------------------
 if "selected_tree_id" not in st.session_state:
     st.session_state.selected_tree_id = None
@@ -60,7 +60,7 @@ if "selected_tree_id" not in st.session_state:
 search_term = st.text_input("Search:").strip()
 
 # ---------------------------------------------------------------------
-# Choose layout widths
+# Layout columns
 # ---------------------------------------------------------------------
 if st.session_state.selected_tree_id:
     col_list, col_detail = st.columns([1, 2])
@@ -68,7 +68,7 @@ else:
     col_list, col_detail = st.columns([1, 0.05])
 
 # ---------------------------------------------------------------------
-# Detail panel
+# DETAIL PANEL
 # ---------------------------------------------------------------------
 with col_detail:
     if st.session_state.selected_tree_id:
@@ -78,12 +78,11 @@ with col_detail:
             fetch=True,
         )[0]
 
-        # 1️⃣ Rating at the very top
+        # 1️⃣ Rating
         st.header(tree["tree_name"])
-        rating_display = tree.get("rating", "N/A")
-        st.markdown(f"### Rating: {rating_display}")
+        st.markdown(f"### Rating: {tree.get('rating', 'N/A')}")
 
-        # 2️⃣ Numeric scores in a table
+        # 2️⃣ Score table (black bold text)
         score_labels = {
             "climate_adaptation":       "Climate adaptation",
             "water_efficiency":         "Water efficiency",
@@ -102,11 +101,20 @@ with col_detail:
             for col, label in score_labels.items()
             if col in tree and tree[col] is not None
         ]
+
         if score_rows:
             df = pd.DataFrame(score_rows).set_index("Criterion")
-            st.table(df)
 
-        # 3️⃣ Descriptive paragraphs
+            styled_df = (
+                df.style
+                .set_properties(**{"color": "black", "font-weight": "bold"})
+                .set_table_styles(
+                    [{"selector": "th", "props": [("color", "black"), ("font-weight", "bold")]}]
+                )
+            )
+            st.table(styled_df)
+
+        # 3️⃣ Info paragraphs
         st.markdown("---")
         st.markdown(f"**Information**  \n{tree.get('information', 'N/A')}")
         st.markdown(f"**Suitability**  \n{tree.get('suitability', 'N/A')}")
@@ -118,7 +126,7 @@ with col_detail:
             st.rerun()
 
 # ---------------------------------------------------------------------
-# List panel
+# LIST PANEL
 # ---------------------------------------------------------------------
 with col_list:
     if search_term:
@@ -146,7 +154,7 @@ with col_list:
         else:
             st.info("No match found.")
     else:
-        st.info("Start typing to search, or click one below.")
+        st.info("Start typing to search, or click a sample below.")
         preview = execute_query(
             """
             SELECT DISTINCT ON (tree_name)
