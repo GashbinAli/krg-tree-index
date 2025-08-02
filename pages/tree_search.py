@@ -1,7 +1,7 @@
 """
 Tree Search page
 ----------------
-Search by common or scientific name.  Click a tree to see its image, rating,
+Search by common or scientific name. Click a tree to see its image, rating,
 score table, and info paragraphs.
 """
 
@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 from pathlib import Path
 
-import header                     # top-bar logos
+import header                      # top-bar logos
 from image_utils import show_tree_image
 
 # ---------------------- page config + logos --------------------------
@@ -25,10 +25,10 @@ except ModuleNotFoundError:
 
     helper_path = Path(__file__).resolve().parent.parent / "db-handler.py"
     spec = importlib.util.spec_from_file_location("db_handler", helper_path)
-    db_handler = importlib.util.module_from_spec(spec)            # type: ignore
+    db_handler = importlib.util.module_from_spec(spec)          # type: ignore
     sys.modules["db_handler"] = db_handler
-    spec.loader.exec_module(db_handler)                           # type: ignore[arg-type]
-    execute_query = db_handler.execute_query                      # type: ignore[attr-defined]
+    spec.loader.exec_module(db_handler)                         # type: ignore[arg-type]
+    execute_query = db_handler.execute_query                    # type: ignore[attr-defined]
 
 # ---------------------- secrets override -----------------------------
 if "connections" in st.secrets and "postgres" in st.secrets["connections"]:
@@ -43,7 +43,9 @@ if "selected_tree_id" not in st.session_state:
 
 search_term = st.text_input("Search:").strip()
 
-col_list, col_detail = st.columns([1, 2]) if st.session_state.selected_tree_id else st.columns([1, 0.05])
+col_list, col_detail = (
+    st.columns([1, 2]) if st.session_state.selected_tree_id else st.columns([1, 0.05])
+)
 
 # =====================================================================
 # DETAIL PANEL
@@ -83,13 +85,30 @@ with col_detail:
                 if col in tree and tree[col] is not None
             ]
             if rows:
-                import pandas as pd
+                # ↓↓↓ shrink vertical + horizontal padding ↓↓↓
+                st.markdown(
+                    """
+                    <style>
+                      .stTable tbody tr th,
+                      .stTable tbody tr td {
+                          padding: 4px 8px !important;
+                      }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
                 df = pd.DataFrame(rows).set_index("Criterion")
                 styled = (
                     df.style
                     .set_properties(**{"color": "black", "font-weight": "bold"})
                     .set_table_styles(
-                        [{"selector": "th", "props": [("color", "black"), ("font-weight", "bold")]}]
+                        [
+                            {
+                                "selector": "th",
+                                "props": [("color", "black"), ("font-weight", "bold")],
+                            }
+                        ]
                     )
                 )
                 st.table(styled)
