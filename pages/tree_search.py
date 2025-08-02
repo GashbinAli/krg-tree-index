@@ -56,43 +56,51 @@ with col_detail:
             fetch=True,
         )[0]
 
-        # -- title & rating --
+        # --- header + rating line ---
         st.header(tree["tree_name"])
         st.markdown(f"### Rating: {tree.get('rating', 'N/A')}")
 
-        # -- image --
-        show_tree_image(tree.get("image_path"), width=250)
+        # --- two-column layout: scores (left) • image (right) ---
+        col_scores, col_image = st.columns([2, 1])
 
-        # -- score table --
-        score_labels = {
-            "climate_adaptation":       "Climate adaptation",
-            "water_efficiency":         "Water efficiency",
-            "biodiversity_support":     "Biodiversity support",
-            "community_acceptance":     "Community acceptance",
-            "aesthetic_cultural_fit":   "Aesthetic & cultural fit",
-            "shade_public_use":         "Shade / public use",
-            "cost_of_planting":         "Cost of planting",
-            "maintenance_needs":        "Maintenance needs",
-            "lifespan_durability":      "Lifespan & durability",
-            "total_score":              "TOTAL score",
-        }
-        rows = [
-            {"Criterion": label, "Score": tree[col]}
-            for col, label in score_labels.items()
-            if col in tree and tree[col] is not None
-        ]
-        if rows:
-            df = pd.DataFrame(rows).set_index("Criterion")
-            styled = (
-                df.style
-                .set_properties(**{"color": "black", "font-weight": "bold"})
-                .set_table_styles(
-                    [{"selector": "th", "props": [("color", "black"), ("font-weight", "bold")]}]
+        # ♦ Scores table
+        with col_scores:
+            score_labels = {
+                "climate_adaptation":       "Climate adaptation",
+                "water_efficiency":         "Water efficiency",
+                "biodiversity_support":     "Biodiversity support",
+                "community_acceptance":     "Community acceptance",
+                "aesthetic_cultural_fit":   "Aesthetic & cultural fit",
+                "shade_public_use":         "Shade / public use",
+                "cost_of_planting":         "Cost of planting",
+                "maintenance_needs":        "Maintenance needs",
+                "lifespan_durability":      "Lifespan & durability",
+                "total_score":              "TOTAL score",
+            }
+            rows = [
+                {"Criterion": label, "Score": tree[col]}
+                for col, label in score_labels.items()
+                if col in tree and tree[col] is not None
+            ]
+            if rows:
+                import pandas as pd
+                df = pd.DataFrame(rows).set_index("Criterion")
+                styled = (
+                    df.style
+                    .set_properties(**{"color": "black", "font-weight": "bold"})
+                    .set_table_styles(
+                        [{"selector": "th", "props": [("color", "black"), ("font-weight", "bold")]}]
+                    )
                 )
-            )
-            st.table(styled)
+                st.table(styled)
+            else:
+                st.info("No individual scores available.")
 
-        # -- paragraphs --
+        # ♦ Image
+        with col_image:
+            show_tree_image(tree.get("image_path"), width=240)
+
+        # --- paragraphs below both columns ---
         st.markdown("---")
         st.markdown(f"**Information**  \n{tree.get('information', 'N/A')}")
         st.markdown(f"**Suitability**  \n{tree.get('suitability', 'N/A')}")
