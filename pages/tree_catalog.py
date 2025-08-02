@@ -1,29 +1,26 @@
 """
-Tree Catalog page
------------------
-Shows every tree in the database alphabetically.
+Tree Catalog page – alphabetical list with thumbnails.
 """
 
 import streamlit as st
-import header                       # logos
+from image_utils import show_tree_image
+import header
 from db_handler import execute_query
 
-# ------------------------ Page config + logos ------------------------
+# ---------------------- page config + logos --------------------------
 st.set_page_config(page_title="KRG Tree Index – Tree Catalog", layout="wide")
-header.show()                       # display the two logos
+header.show()
 
 st.title("🌲 Tree Catalog")
-st.markdown(
-    "Browse the full list of trees. Use your browser’s search (Ctrl-F) to jump quickly."
-)
+st.markdown("Browse all trees alphabetically. Use Ctrl-F to jump quickly.")
 
-# Fetch and display
 rows = execute_query(
-    "SELECT tree_name, scientific_name FROM tree_data ORDER BY tree_name;",
+    "SELECT tree_name, scientific_name, image_path FROM tree_data ORDER BY tree_name;",
     fetch=True,
 )
 
 for r in rows:
     st.subheader(r["tree_name"])
+    show_tree_image(r["image_path"], width=120)   # thumbnail
     st.markdown(f"*{r['scientific_name']}*")
     st.markdown("---")
