@@ -28,7 +28,7 @@ def main():
             continue   # skip non-image files
 
         tree_name = slug_to_tree_name(img.stem)
-        rel_path  = str(img.relative_to(REPO_ROOT))      # e.g. assets/tree_images/Brants_Oak.png
+        rel_path = img.relative_to(REPO_ROOT).as_posix()  # always forward slashes      # e.g. assets/tree_images/Brants_Oak.png
 
         execute_query(
             "UPDATE tree_data SET image_path = %s WHERE tree_name ILIKE %s;",
