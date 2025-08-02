@@ -6,9 +6,10 @@ score table, and info paragraphs.
 """
 
 import os
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
-from pathlib import Path
 
 import header                      # top-bar logos
 from image_utils import show_tree_image
@@ -85,12 +86,12 @@ with col_detail:
                 if col in tree and tree[col] is not None
             ]
             if rows:
-                # ↓↓↓ shrink vertical + horizontal padding ↓↓↓
+                # ↓↓↓ shrink cell padding for a compact table ↓↓↓
                 st.markdown(
                     """
                     <style>
-                      .stTable tbody tr th,
-                      .stTable tbody tr td {
+                      .dataframe tbody tr th,
+                      .dataframe tbody tr td {
                           padding: 4px 8px !important;
                       }
                     </style>
