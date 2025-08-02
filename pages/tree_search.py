@@ -86,20 +86,9 @@ with col_detail:
                 if col in tree and tree[col] is not None
             ]
             if rows:
-                # ↓↓↓ shrink cell padding for a compact table ↓↓↓
-                st.markdown(
-                    """
-                    <style>
-                      .dataframe tbody tr th,
-                      .dataframe tbody tr td {
-                          padding: 4px 8px !important;
-                      }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
                 df = pd.DataFrame(rows).set_index("Criterion")
+
+                # --- compact padding directly via Styler ---
                 styled = (
                     df.style
                     .set_properties(**{"color": "black", "font-weight": "bold"})
@@ -107,8 +96,16 @@ with col_detail:
                         [
                             {
                                 "selector": "th",
-                                "props": [("color", "black"), ("font-weight", "bold")],
-                            }
+                                "props": [
+                                    ("color", "black"),
+                                    ("font-weight", "bold"),
+                                    ("padding", "4px 8px"),
+                                ],
+                            },
+                            {
+                                "selector": "td",
+                                "props": [("padding", "4px 8px")],
+                            },
                         ]
                     )
                 )
